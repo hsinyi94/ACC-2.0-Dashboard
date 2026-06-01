@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+
+# Output (每次重新生成)
+output/*.html
+output/*.xlsx
+
+# Cache
+output/weekly_gms_cache.json
+
+# OS
+Thumbs.db
+.DS_Store
