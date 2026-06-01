@@ -1716,9 +1716,9 @@ def render_tabs_nav() -> str:
         '<button class="tab" data-target="panel2">1.0 vs 2.0 Profile 比較</button>'
         '<button class="tab" data-target="panel3">月度 GMS</button>'
         '<button class="tab" data-target="panel4">YTD 達標率</button>'
+        '<button class="tab" data-target="panel7">Weekly GMS</button>'
         '<button class="tab" data-target="panel5">Adoption</button>'
         '<button class="tab" data-target="panel6">Raw Data</button>'
-        '<button class="tab" data-target="panel7">Weekly GMS</button>'
         '</nav>'
     )
 
@@ -1741,7 +1741,7 @@ TABS_JS = """
 """
 
 
-def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched: int = 0) -> str:
+def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched: int = 0, ytd_gms: float = 0, ytd_yoy: float = 0) -> str:
     us_pct = next((p for l, c, p in us_exp_rows if l == "US"), 0)
     exp_pct = next((p for l, c, p in us_exp_rows if l.startswith("Expansion")), 0)
     updated = dt.datetime.now().strftime("%Y-%m-%d")
@@ -1764,6 +1764,8 @@ def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched
         f'<div class="sub">{launched_pct:.0f}% launched ({n_launched}/{n20})</div></div>'
         f'<div class="kpi"><div class="label">US</div><div class="value">{pct(us_pct)}</div><div class="sub">ACC 2.0</div></div>'
         f'<div class="kpi"><div class="label">Expansion</div><div class="value">{pct(exp_pct)}</div><div class="sub">non-US</div></div>'
+        f'<div class="kpi"><div class="label">YTD GMS</div><div class="value">${ytd_gms:,.0f}</div><div class="sub">ACC 2.0</div></div>'
+        f'<div class="kpi"><div class="label">YTD YoY</div><div class="value" style="color:{"#2f9e44" if ytd_yoy >= 0 else "#e03131"}">{ytd_yoy:+.0f}%</div><div class="sub">vs ACC 1.0 2025</div></div>'
         '</div>'
         '</header>'
     )
@@ -1799,7 +1801,9 @@ def build() -> None:
     compare_keys = [item for item, col, _ in COMPARISON_MAP if col in df_10.columns]
 
     body = (
-        render_hero(113, n10, us_exp, n_target=115, n_launched=adoption_result.n_20)
+        render_hero(113, n10, us_exp, n_target=115, n_launched=adoption_result.n_20,
+                    ytd_gms=ytd_result.ytd.gms_20_ytd,
+                    ytd_yoy=(ytd_result.ytd.gms_20_ytd / ytd_result.ytd.gms_10_ytd - 1) * 100 if ytd_result.ytd.gms_10_ytd > 0 else 0)
         + render_tabs_nav()
         + '<main>'
         + '<div class="tab-panel active" id="panel1">'
