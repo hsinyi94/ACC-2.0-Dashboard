@@ -36,7 +36,7 @@ LAUNCH_CHANNEL = "DSR"
 # ============================================================
 
 def find_latest_month_folder(base: Path) -> Path:
-    """MBR 底下命名如『1. Jan / 2. Feb ...』,取編號最大的。"""
+    """MBR 底下命名如『1. Jan / 2. Feb ...』,取有 P0 檔的編號最大者。"""
     pattern = re.compile(r"^(\d+)\.\s*([A-Za-z]+)$")
     candidates = []
     for child in base.iterdir():
@@ -44,9 +44,16 @@ def find_latest_month_folder(base: Path) -> Path:
             continue
         m = pattern.match(child.name)
         if m:
-            candidates.append((int(m.group(1)), child))
+            # 確認裡面有 P0 開頭的 xlsx
+            has_p0 = any(
+                f.is_file() and f.suffix.lower() == ".xlsx"
+                and f.name.lower().startswith("p0")
+                for f in child.iterdir()
+            )
+            if has_p0:
+                candidates.append((int(m.group(1)), child))
     if not candidates:
-        raise FileNotFoundError(f"{base} 底下找不到月份資料夾")
+        raise FileNotFoundError(f"{base} 底下找不到含 P0 的月份資料夾")
     candidates.sort(key=lambda x: x[0])
     return candidates[-1][1]
 
