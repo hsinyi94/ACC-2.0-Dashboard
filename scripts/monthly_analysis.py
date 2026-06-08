@@ -44,9 +44,9 @@ def find_latest_month_folder(base: Path) -> Path:
             continue
         m = pattern.match(child.name)
         if m:
-            # 確認裡面有 P0 開頭的 xlsx
+            # 確認裡面有 P0 開頭的 xlsx 或 csv
             has_p0 = any(
-                f.is_file() and f.suffix.lower() == ".xlsx"
+                f.is_file() and f.suffix.lower() in (".xlsx", ".csv")
                 and f.name.lower().startswith("p0")
                 for f in child.iterdir()
             )
@@ -59,11 +59,11 @@ def find_latest_month_folder(base: Path) -> Path:
 
 
 def find_latest_p0_in_folder(folder: Path) -> Path:
-    """挑 P0 開頭 xlsx,取最新修改時間者 (不分大小寫)。"""
+    """挑 P0 開頭 xlsx/csv,取最新修改時間者 (不分大小寫)。"""
     files = [
         f for f in folder.iterdir()
         if f.is_file()
-        and f.suffix.lower() == ".xlsx"
+        and f.suffix.lower() in (".xlsx", ".csv")
         and f.name.lower().startswith("p0")
     ]
     if not files:
@@ -129,19 +129,22 @@ P0_NEEDED_COLS = [
 
 
 def load_p0_filtered(p0_path: Path) -> pd.DataFrame:
-    """讀 P0 Sheet1,只保留需要欄位,並過濾 calendar_year=2026 + launch_channel=DSR。"""
+    """讀 P0 (xlsx 或 csv),只保留需要欄位,並過濾 calendar_year=2026 + launch_channel=DSR。"""
     print(f"  讀取 P0 (只取需要欄位): {p0_path.name}")
-    df = pd.read_excel(
-        p0_path,
-        sheet_name="Sheet1",
-        engine="openpyxl",
-        usecols=P0_NEEDED_COLS,
-    )
+    if p0_path.suffix.lower() == ".csv":
+        df = pd.read_csv(p0_path, usecols=P0_NEEDED_COLS)
+    else:
+        df = pd.read_excel(
+            p0_path,
+            sheet_name="Sheet1",
+            engine="openpyxl",
+            usecols=P0_NEEDED_COLS,
+        )
     print(f"    原始筆數: {len(df):,}")
     df = df[df["calendar_year"] == CALENDAR_YEAR].copy()
     df = df[df["launch_channel"] == LAUNCH_CHANNEL].copy()
     print(f"    過濾 year={CALENDAR_YEAR} + launch_channel={LAUNCH_CHANNEL} 後: {len(df):,}")
-    # 型別正規化:MBR 的 merchant_customer_id 是 float (帶 .0),轉 int 再字串化以對齊 ACC int MCID
+    # 型別正規化:merchant_customer_id 可能是 float (帶 .0),轉 int 再字串化
     df = df.dropna(subset=["merchant_customer_id"]).copy()
     df["merchant_customer_id"] = df["merchant_customer_id"].astype("int64").astype(str).str.strip()
     df["calendar_month"] = df["calendar_month"].astype(int)
