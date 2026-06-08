@@ -1764,8 +1764,8 @@ def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched
         f'<div class="sub">{launched_pct:.0f}% launched ({n_launched}/{n20})</div></div>'
         f'<div class="kpi"><div class="label">US</div><div class="value">{pct(us_pct)}</div><div class="sub">ACC 2.0</div></div>'
         f'<div class="kpi"><div class="label">Expansion</div><div class="value">{pct(exp_pct)}</div><div class="sub">non-US</div></div>'
-        f'<div class="kpi"><div class="label">YTD GMS</div><div class="value">${ytd_gms:,.0f}</div><div class="sub">ACC 2.0</div></div>'
-        f'<div class="kpi"><div class="label">YTD YoY</div><div class="value" style="color:{"#2f9e44" if ytd_yoy >= 0 else "#e03131"}">{ytd_yoy:+.0f}%</div><div class="sub">vs ACC 1.0 2025</div></div>'
+        f'<div class="kpi"><div class="label">YTD GMS</div><div class="value">${ytd_gms:,.0f}</div>'
+        f'<div class="sub">ACC 2.0 · YoY {ytd_yoy:+.0f}% vs ACC 1.0 2025</div></div>'
         '</div>'
         '</header>'
     )
