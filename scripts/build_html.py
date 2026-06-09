@@ -1545,10 +1545,18 @@ def render_section6(raw_df: "pd.DataFrame") -> str:
 # ============================================================
 
 def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0) -> str:
-    """Weekly GMS 折線圖 + 表格。ytd_20/ytd_10 用最新 P0 的 ytd_ord_gms。"""
+    """Weekly Performance: GMS + GMS/Seller 折線圖與表格。"""
     weeks = weekly.weeks
     gms_20 = weekly.gms_20
     gms_10 = weekly.gms_10
+
+    # 賣家數
+    n_20 = 113
+    n_10 = 70
+
+    # GMS/Seller
+    gps_20 = [v / n_20 if v > 0 else 0 for v in gms_20]
+    gps_10 = [v / n_10 if v > 0 else 0 for v in gms_10]
 
     # SVG 折線圖
     all_vals = [v for v in gms_20 + gms_10 if v > 0]
@@ -1658,9 +1666,52 @@ def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0) -> str:
 
     table = (
         '<div style="overflow-x:auto;margin-top:16px;">'
+        '<h4 style="padding:0 16px;font-size:13px;color:var(--c-primary);margin-bottom:4px;">Weekly GMS (USD)</h4>'
         '<table class="monthly-table">'
         f'<thead>{header}</thead>'
         f'<tbody>{row_20}{row_10}{row_yoy}{row_wow}</tbody>'
+        '</table></div>'
+    )
+
+    # === GMS / Seller 表格 ===
+    header_ps = '<tr><th>Week</th>' + "".join(f'<th class="num">W{w}</th>' for w in weeks) + '<th class="num" style="background:#eef3fb;border-left:2px solid var(--c-primary-soft);">YTD Avg</th></tr>'
+
+    ytd_ps_20 = ytd_20 / n_20 if n_20 else 0
+    ytd_ps_10 = ytd_10 / n_10 if n_10 else 0
+
+    row_ps_20 = '<tr class="row-20"><td style="font-weight:600;color:#e07b00;">ACC 2.0</td>' + "".join(
+        f'<td class="num">{v:,.0f}</td>' if v > 0 else '<td class="no-data">—</td>' for v in gps_20
+    ) + f'<td class="num" style="font-weight:700;background:#eef3fb;border-left:2px solid var(--c-primary-soft);">{ytd_ps_20:,.0f}</td></tr>'
+
+    row_ps_10 = '<tr class="row-10"><td style="font-weight:600;color:#1f4e79;">ACC 1.0</td>' + "".join(
+        f'<td class="num">{v:,.0f}</td>' if v > 0 else '<td class="no-data">—</td>' for v in gps_10
+    ) + f'<td class="num" style="font-weight:700;background:#eef3fb;border-left:2px solid var(--c-primary-soft);">{ytd_ps_10:,.0f}</td></tr>'
+
+    # YoY per seller
+    yoy_ps_vals = []
+    for g20, g10 in zip(gps_20, gps_10):
+        if g20 > 0 and g10 > 0:
+            yoy_ps_vals.append((g20 / g10 - 1) * 100)
+        else:
+            yoy_ps_vals.append(None)
+    ytd_ps_yoy = (ytd_ps_20 / ytd_ps_10 - 1) * 100 if ytd_ps_10 > 0 and ytd_ps_20 > 0 else None
+    ytd_ps_yoy_html = ''
+    if ytd_ps_yoy is not None:
+        cls = "mom-up" if ytd_ps_yoy > 0 else "mom-down"
+        ytd_ps_yoy_html = f'<span class="{cls}">{abs(ytd_ps_yoy):.0f}%</span>'
+    else:
+        ytd_ps_yoy_html = '—'
+    row_ps_yoy = '<tr class="row-mom"><td style="font-weight:600;color:var(--c-muted);">YoY</td>' + "".join(
+        f'<td class="num"><span class="{"mom-up" if v > 0 else "mom-down"}">{abs(v):.0f}%</span></td>' if v is not None
+        else '<td class="no-data">—</td>' for v in yoy_ps_vals
+    ) + f'<td class="num" style="font-weight:700;background:#eef3fb;border-left:2px solid var(--c-primary-soft);">{ytd_ps_yoy_html}</td></tr>'
+
+    table_ps = (
+        '<div style="overflow-x:auto;margin-top:24px;">'
+        '<h4 style="padding:0 16px;font-size:13px;color:var(--c-primary);margin-bottom:4px;">Weekly GMS / Seller (USD)</h4>'
+        '<table class="monthly-table">'
+        f'<thead>{header_ps}</thead>'
+        f'<tbody>{row_ps_20}{row_ps_10}{row_ps_yoy}</tbody>'
         '</table></div>'
     )
 
@@ -1674,14 +1725,15 @@ def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0) -> str:
     )
 
     return (
-        '<h2 class="section-title" id="section7">Weekly GMS</h2>'
+        '<h2 class="section-title" id="section7">Weekly Performance</h2>'
         '<section class="card" id="s7-weekly">'
-        '<div class="card-header"><span>ACC 2.0 vs ACC 1.0 · 每週 GMS 變化</span></div>'
+        '<div class="card-header"><span>ACC 2.0 vs ACC 1.0 · 每週 Performance</span></div>'
         '<div class="chart-wrap">'
         '<h4>Weekly WTD GMS (USD)</h4>'
         + svg + legend
         + '</div>'
         + table
+        + table_ps
         + source_note
         + '</section>'
     )
@@ -1716,7 +1768,7 @@ def render_tabs_nav() -> str:
         '<button class="tab" data-target="panel2">1.0 vs 2.0 Profile 比較</button>'
         '<button class="tab" data-target="panel3">月度 GMS</button>'
         '<button class="tab" data-target="panel4">YTD 達標率</button>'
-        '<button class="tab" data-target="panel7">Weekly GMS</button>'
+        '<button class="tab" data-target="panel7">Weekly Performance</button>'
         '<button class="tab" data-target="panel5">Adoption</button>'
         '<button class="tab" data-target="panel6">Raw Data</button>'
         '</nav>'
