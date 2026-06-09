@@ -1673,6 +1673,40 @@ def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0) -> str:
         '</table></div>'
     )
 
+    # === GMS / Seller 折線圖 ===
+    all_ps_vals = [v for v in gps_20 + gps_10 if v > 0]
+    y_max_ps = max(all_ps_vals) * 1.15 if all_ps_vals else 1
+
+    lines_svg_ps = []
+    series_ps = [("ACC 2.0 (2026)", gps_20, "#e07b00"), ("ACC 1.0 (2025)", gps_10, "#1f4e79")]
+    for label_s, vals, color in series_ps:
+        pts = []
+        for i, v in enumerate(vals):
+            if v > 0:
+                x = pad_l + i * x_step
+                y = pad_t + plot_h * (1 - v / y_max_ps)
+                pts.append((x, y))
+        if len(pts) >= 2:
+            d = "M " + " L ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+            lines_svg_ps.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>')
+        for x, y in pts:
+            lines_svg_ps.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3" fill="{color}" stroke="#fff" stroke-width="1.5"/>')
+
+    grid_ps = []
+    for i in range(5):
+        ratio = i / 4
+        y = pad_t + plot_h * (1 - ratio)
+        label_v = y_max_ps * ratio
+        label_txt = f"${label_v:,.0f}"
+        grid_ps.append(f'<line x1="{pad_l}" y1="{y:.0f}" x2="{width-pad_r}" y2="{y:.0f}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="2,3"/>')
+        grid_ps.append(f'<text x="{pad_l-6}" y="{y+4:.0f}" text-anchor="end" font-size="10" fill="#9ca3af">{label_txt}</text>')
+
+    svg_ps = (
+        f'<svg viewBox="0 0 {width} {height}" width="100%" style="max-width:100%;height:auto;">'
+        + "".join(grid_ps) + "".join(x_labels) + "".join(lines_svg_ps)
+        + '</svg>'
+    )
+
     # === GMS / Seller 表格 ===
     header_ps = '<tr><th>Week</th>' + "".join(f'<th class="num">W{w}</th>' for w in weeks) + '<th class="num" style="background:#eef3fb;border-left:2px solid var(--c-primary-soft);">YTD Avg</th></tr>'
 
@@ -1707,8 +1741,11 @@ def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0) -> str:
     ) + f'<td class="num" style="font-weight:700;background:#eef3fb;border-left:2px solid var(--c-primary-soft);">{ytd_ps_yoy_html}</td></tr>'
 
     table_ps = (
-        '<div style="overflow-x:auto;margin-top:24px;">'
-        '<h4 style="padding:0 16px;font-size:13px;color:var(--c-primary);margin-bottom:4px;">Weekly GMS / Seller (USD)</h4>'
+        '<div class="chart-wrap" style="margin-top:24px;">'
+        '<h4>Weekly GMS / Seller (USD)</h4>'
+        + svg_ps + legend
+        + '</div>'
+        '<div style="overflow-x:auto;margin-top:16px;">'
         '<table class="monthly-table">'
         f'<thead>{header_ps}</thead>'
         f'<tbody>{row_ps_20}{row_ps_10}{row_ps_yoy}</tbody>'
