@@ -59,13 +59,22 @@ def find_latest_month_folder(base: Path) -> Path:
 
 
 def find_latest_p0_in_folder(folder: Path) -> Path:
-    """挑 P0 開頭 xlsx/csv,取最新修改時間者 (不分大小寫)。"""
+    """挑 P0 開頭 xlsx/csv,優先找 P0_YYYYMMDD 格式,排除 ab_data 等。"""
     files = [
         f for f in folder.iterdir()
         if f.is_file()
         and f.suffix.lower() in (".xlsx", ".csv")
         and f.name.lower().startswith("p0")
+        and "ab_data" not in f.name.lower()
     ]
+    if not files:
+        # fallback: 包含 ab_data
+        files = [
+            f for f in folder.iterdir()
+            if f.is_file()
+            and f.suffix.lower() in (".xlsx", ".csv")
+            and f.name.lower().startswith("p0")
+        ]
     if not files:
         raise FileNotFoundError(f"{folder} 沒有 P0 開頭檔案")
     files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
