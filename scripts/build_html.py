@@ -881,12 +881,12 @@ def render_country_compare_card(df_10, blocks_20) -> str:
     map20 = {k: (c, p) for k, c, p in us_exp_20}
 
     rows_html = []
-    for country in ["US", "EU", "JP", "MENA", "SG"]:
+    for country in ["US", "EU", "JP", "MENA", "AU"]:
         c10, p10 = country_10.get(country, (0, 0))
         c20, p20 = country_20.get(country, (0, 0))
         diff = (p20 - p10) * 100
         rows_html.append(_compare_row(country, c10, p10, c20, p20, diff))
-    for extra in sorted(set(country_10) - {"US", "EU", "JP", "MENA", "AU", "SG"}):
+    for extra in sorted(set(country_10) - {"US", "EU", "JP", "MENA", "AU"}):
         c10, p10 = country_10[extra]
         rows_html.append(_compare_row(extra, c10, p10, 0, 0, (0 - p10) * 100))
 
