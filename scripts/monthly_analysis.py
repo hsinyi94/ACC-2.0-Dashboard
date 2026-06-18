@@ -120,8 +120,8 @@ def load_10_row() -> MonthlyRow:
 # ============================================================
 
 def load_20_mcids() -> set[str]:
-    """取 ACC 2.0 最終賣家名單 (113) 的 MCID 集合。"""
-    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (113)", engine="openpyxl")
+    """取 ACC 2.0 最終賣家名單 (115) 的 MCID 集合。"""
+    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (115)", engine="openpyxl")
     if len(df) != 110:
         print(f"  [注意] 最終賣家名單筆數={len(df)},非預期的 110,以實際筆數為準")
     return set(df["MCID"].dropna().astype(str).str.strip())

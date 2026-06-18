@@ -74,7 +74,7 @@ def find_latest_nsr_tracker(base: Path) -> Path:
 # ============================================================
 
 def load_20_mcids() -> set[str]:
-    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (113)", engine="openpyxl")
+    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (115)", engine="openpyxl")
     return set(df["MCID"].dropna().astype(str).str.strip())
 
 

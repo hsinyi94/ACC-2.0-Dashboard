@@ -21,7 +21,7 @@ LAUNCH_CHANNEL = "DSR"
 
 
 def load_20_mcids() -> set[str]:
-    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (113)", engine="openpyxl")
+    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (115)", engine="openpyxl")
     return set(df["MCID"].dropna().astype(str).str.strip())
 
 
@@ -62,9 +62,9 @@ def find_all_wk_p0s(base: Path) -> list[tuple[int, Path]]:
 
 
 def calc_week(p0_path: Path, week: int, mcids_20: set[str], mcids_10: set[str]) -> dict:
-    """從一個 P0 檔計算該週的 2.0 和 1.0 wtd_ord_gms。"""
+    """從一個 P0 檔計算該週的 2.0 和 1.0 wtd_ord_gms + ytd_ord_gms。"""
     cols = ["reporting_year", "reporting_week_of_year", "launch_channel",
-            "merchant_customer_id", "wtd_ord_gms"]
+            "merchant_customer_id", "wtd_ord_gms", "ytd_ord_gms"]
 
     # 偵測工作表名 (有些是 "raw",有些可能是其他名稱)
     xls = pd.ExcelFile(p0_path, engine="openpyxl")
@@ -82,23 +82,26 @@ def calc_week(p0_path: Path, week: int, mcids_20: set[str], mcids_10: set[str]) 
                 break
     if sheet is None:
         print(f"      [跳過] {p0_path.name} 找不到含 reporting_year 的工作表")
-        return {"week": week, "gms_20": 0.0, "gms_10": 0.0}
+        return {"week": week, "gms_20": 0.0, "gms_10": 0.0, "ytd_20": 0.0, "ytd_10": 0.0}
 
     df = pd.read_excel(p0_path, sheet_name=sheet, engine="openpyxl", usecols=cols)
     df = df[df["launch_channel"] == LAUNCH_CHANNEL].copy()
     df = df.dropna(subset=["merchant_customer_id"]).copy()
     df["merchant_customer_id"] = df["merchant_customer_id"].astype("int64").astype(str).str.strip()
     df["wtd_ord_gms"] = pd.to_numeric(df["wtd_ord_gms"], errors="coerce").fillna(0.0)
+    df["ytd_ord_gms"] = pd.to_numeric(df["ytd_ord_gms"], errors="coerce").fillna(0.0)
 
     # ACC 2.0: year=2026, week=該週
     df_20 = df[(df["reporting_year"] == 2026) & (df["reporting_week_of_year"] == week)]
     gms_20 = float(df_20[df_20["merchant_customer_id"].isin(mcids_20)]["wtd_ord_gms"].sum())
+    ytd_20 = float(df_20[df_20["merchant_customer_id"].isin(mcids_20)]["ytd_ord_gms"].sum())
 
     # ACC 1.0: year=2025, week=該週
     df_10 = df[(df["reporting_year"] == 2025) & (df["reporting_week_of_year"] == week)]
     gms_10 = float(df_10[df_10["merchant_customer_id"].isin(mcids_10)]["wtd_ord_gms"].sum())
+    ytd_10 = float(df_10[df_10["merchant_customer_id"].isin(mcids_10)]["ytd_ord_gms"].sum())
 
-    return {"week": week, "gms_20": gms_20, "gms_10": gms_10}
+    return {"week": week, "gms_20": gms_20, "gms_10": gms_10, "ytd_20": ytd_20, "ytd_10": ytd_10}
 
 
 def load_cache() -> dict[int, dict]:
@@ -120,6 +123,8 @@ class WeeklyGMSResult:
     weeks: list[int]
     gms_20: list[float]
     gms_10: list[float]
+    ytd_20: list[float]
+    ytd_10: list[float]
 
 
 def build_weekly_gms(force_all: bool = False) -> WeeklyGMSResult:
@@ -140,8 +145,9 @@ def build_weekly_gms(force_all: bool = False) -> WeeklyGMSResult:
     if not cached_weeks or force_all:
         to_run = all_wks
     else:
-        # 只跑 cache 裡沒有的(通常是最新一週)
-        to_run = [(wk, p) for wk, p in all_wks if wk not in cached_weeks]
+        # 只跑 cache 裡沒有的 或 沒有 ytd_20 欄位的(舊格式需重算)
+        to_run = [(wk, p) for wk, p in all_wks
+                  if wk not in cached_weeks or "ytd_20" not in cache.get(wk, {})]
 
     if to_run:
         print(f"  需要計算 {len(to_run)} 週: {[w for w, _ in to_run]}")
@@ -163,7 +169,9 @@ def build_weekly_gms(force_all: bool = False) -> WeeklyGMSResult:
     weeks = sorted(cache.keys())
     gms_20 = [cache[w]["gms_20"] for w in weeks]
     gms_10 = [cache[w]["gms_10"] for w in weeks]
-    return WeeklyGMSResult(weeks=weeks, gms_20=gms_20, gms_10=gms_10)
+    ytd_20 = [cache[w].get("ytd_20", 0) for w in weeks]
+    ytd_10 = [cache[w].get("ytd_10", 0) for w in weeks]
+    return WeeklyGMSResult(weeks=weeks, gms_20=gms_20, gms_10=gms_10, ytd_20=ytd_20, ytd_10=ytd_10)
 
 
 if __name__ == "__main__":

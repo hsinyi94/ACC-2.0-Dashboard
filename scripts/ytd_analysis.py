@@ -111,7 +111,7 @@ def load_plan_data() -> PlanData:
         gms_per_seller_yoy_goal=_num(3, 20),
         gms_goal=_num(3, 22),
         gms_yoy_goal=_num(3, 24),
-        enrolled_20=113,  # 最終賣家名單 (113)
+        enrolled_20=115,  # 最終賣家名單 (115)
         enrolled_nsr=int(_num(4, 25)) if _num(4, 25) else 0,
         gms_10_2025=gms_10_total,
         enrolled_10=70,
@@ -123,8 +123,8 @@ def load_plan_data() -> PlanData:
 # ============================================================
 
 def load_20_mcids() -> set[str]:
-    """取 ACC 2.0 最終賣家名單 (113) 的 MCID 集合。"""
-    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (113)", engine="openpyxl")
+    """取 ACC 2.0 最終賣家名單 (115) 的 MCID 集合。"""
+    df = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (115)", engine="openpyxl")
     if len(df) != 110:
         print(f"  [注意] 最終賣家名單筆數={len(df)},非預期的 110,以實際筆數為準")
     return set(df["MCID"].dropna().astype(str).str.strip())

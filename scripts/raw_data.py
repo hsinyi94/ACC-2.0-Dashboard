@@ -88,7 +88,7 @@ def build_raw_data() -> pd.DataFrame:
     """組裝每位賣家的完整 raw data DataFrame。"""
     # 1. 基本資訊
     print("  [Raw] 讀取賣家名單...")
-    roster = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (113)", engine="openpyxl")
+    roster = pd.read_excel(ACC_FILE, sheet_name="最終賣家名單 (115)", engine="openpyxl")
     # 簡化公司名稱欄位名
     rename_map = {"公司名稱 (請填寫完整公司設立登記名稱，未成立公司請填無)": "公司名稱"}
     roster = roster.rename(columns=rename_map)

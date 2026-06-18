@@ -36,7 +36,7 @@ OUT_FILE = OUT_DIR / f"ACC_2.0_分析_{dt.date.today().strftime('%Y%m%d')}.xlsx"
 
 def load_20_analysis() -> pd.DataFrame:
     """讀 ACC 2.0 最終賣家名單 (113) 作為所有 2.0 分析的唯一來源。"""
-    return pd.read_excel(FILE_20, sheet_name="最終賣家名單 (113)", engine="openpyxl")
+    return pd.read_excel(FILE_20, sheet_name="最終賣家名單 (115)", engine="openpyxl")
 
 
 # 新工作表欄位 -> 分析項目名稱的對照

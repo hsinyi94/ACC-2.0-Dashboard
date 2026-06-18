@@ -91,10 +91,57 @@ body {
 
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-top: 22px;
   max-width: 1200px;
+}
+
+.hero-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-top: 22px;
+}
+
+.hero-content .kpi-row {
+  margin-top: 0;
+  flex: 1;
+}
+
+.snapshot-box {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 380px;
+  max-width: 420px;
+  flex-shrink: 0;
+}
+
+.snapshot-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: rgba(255,255,255,0.95);
+  line-height: 1.4;
+}
+
+.snapshot-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.8;
+}
+
+.snapshot-list li {
+  margin-bottom: 2px;
+}
+
+.snapshot-list strong {
+  color: rgba(255,255,255,0.95);
 }
 
 .kpi {
@@ -426,6 +473,9 @@ footer {
 
 @media (max-width: 720px) {
   .hero { padding: 28px 18px 22px; }
+  .hero-content { flex-direction: column; }
+  .snapshot-box { min-width: unset; max-width: 100%; }
+  .kpi-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
   main { padding: 20px 16px 40px; }
   nav.toc { padding: 8px 16px; }
   thead th, tbody td { padding: 8px 10px; }
@@ -666,10 +716,12 @@ def dual_bar_html(p10: float, p20: float) -> str:
 
 
 def delta_html(diff_pp: float) -> str:
-    if abs(diff_pp) < 0.05:
-        return f'<span class="delta zero">{diff_pp:+.1f} pp</span>'
-    cls = "up" if diff_pp > 0 else "down"
-    return f'<span class="delta {cls}">{abs(diff_pp):.1f} pp</span>'
+    """diff_pp 是百分點差,轉為 bps (×100) 顯示。"""
+    diff_bps = diff_pp * 100
+    if abs(diff_bps) < 5:
+        return f'<span class="delta zero">{diff_bps:+,.0f} bps</span>'
+    cls = "up" if diff_bps > 0 else "down"
+    return f'<span class="delta {cls}">{abs(diff_bps):,.0f} bps</span>'
 
 
 def anchor(item_name: str, prefix: str) -> str:
@@ -682,7 +734,7 @@ def anchor(item_name: str, prefix: str) -> str:
 # ============================================================
 
 def render_section1(blocks: dict, ae_rows, us_exp_rows) -> str:
-    parts = ['<h2 class="section-title" id="section1">區塊 1 · ACC 2.0 錄取賣家分析</h2>']
+    parts = ['<h2 class="section-title" id="section1">ACC 2.0 錄取賣家分析</h2>']
 
     # --- 錄取國家卡片 ---
     parts.append(render_country_card(ae_rows, us_exp_rows))
@@ -797,7 +849,7 @@ def render_simple_card(name: str, rows: list[tuple[str, int, float]], anchor_id:
 # ============================================================
 
 def render_section2(blocks_20, df_10, n10: int) -> str:
-    parts = [f'<h2 class="section-title" id="section2">區塊 2 · ACC 1.0 vs ACC 2.0 對比 (1.0 n={n10} | 2.0 n=113)</h2>']
+    parts = [f'<h2 class="section-title" id="section2">ACC 1.0 vs ACC 2.0 對比 (1.0 n={n10} | 2.0 n=115)</h2>']
 
     # 國家對比
     parts.append(render_country_compare_card(df_10, blocks_20))
@@ -1106,7 +1158,7 @@ def render_section3(result) -> str:
         f'</div>'
     )
     return (
-        '<h2 class="section-title" id="section3">區塊 3 · 月度銷售額變化</h2>'
+        '<h2 class="section-title" id="section3">月度銷售額變化</h2>'
         '<section class="card" id="s3-monthly">'
         '<div class="card-header">'
         '<span>月度 GMS (Jan-Aug)</span>'
@@ -1148,13 +1200,13 @@ def _ytd_attain(v) -> str:
     return f'<td class="attain {cls}">{pct_txt}</td>'
 
 
-def render_section4(ytd) -> str:
+def render_section4(ytd, n_launched: int = 112) -> str:
     r20 = ytd.row_20()
     rnsr = ytd.row_nsr()
     week = ytd.ytd.week
 
     # KPI 區
-    n20_sellers = r20["n"]
+    n20_sellers = n_launched
     gms_per_seller = r20["g_actual"] / n20_sellers if n20_sellers else 0
     kpi = (
         '<div class="ytd-kpi-row">'
@@ -1163,7 +1215,7 @@ def render_section4(ytd) -> str:
         f'<div class="kpi-sub">截至 W{week}</div></div>'
         f'<div class="ytd-kpi"><div class="kpi-label">2.0 YTD GMS / Seller</div>'
         f'<div class="kpi-value">${_ytd_num(gms_per_seller)}</div>'
-        f'<div class="kpi-sub">{_ytd_num(r20["g_actual"])} / {n20_sellers} sellers</div></div>'
+        f'<div class="kpi-sub">{_ytd_num(r20["g_actual"])} / {n20_sellers} launched</div></div>'
         f'<div class="ytd-kpi"><div class="kpi-label">2.0 YTD GMS 達標率</div>'
         f'<div class="kpi-value" style="color:#e07b00">{_ytd_num(r20["g_attain"] * 100, 1) if r20["g_attain"] else "—"}%</div>'
         f'<div class="kpi-sub">{_ytd_num(r20["g_actual"])} / {_ytd_num(r20["g_goal"])}</div></div>'
@@ -1203,7 +1255,7 @@ def render_section4(ytd) -> str:
     )
 
     return (
-        '<h2 class="section-title" id="section4">區塊 4 · YTD 達標率</h2>'
+        '<h2 class="section-title" id="section4">YTD 達標率</h2>'
         '<section class="card" id="s4-ytd">'
         '<div class="card-header">'
         f'<span>YTD 達標率 · 截至 2026 W{week}</span>'
@@ -1270,27 +1322,27 @@ def render_section5(adoption) -> str:
         '<tr>'
         '<th>指標</th>'
         '<th class="num">ACC 2.0<br><small>n=' + str(adoption.n_20) + '</small></th>'
-        '<th class="num">Δ vs NSR<br><small>(pp)</small></th>'
+        '<th class="num">Δ vs NSR<br><small>(bps)</small></th>'
         '<th class="num">NSR All<br><small>n=' + str(adoption.n_nsr) + '</small></th>'
-        '<th class="num">Δ vs 1.0<br><small>(pp)</small></th>'
+        '<th class="num">Δ vs 1.0<br><small>(bps)</small></th>'
         '<th class="num">ACC 1.0<br><small>n=' + str(adoption.n_10) + '</small></th>'
         '</tr>'
     )
     rows_html = []
     for r20, rnsr, r10 in zip(adoption.rows_20, adoption.rows_nsr, adoption.rows_10):
-        pp_vs_nsr = (r20.pct - rnsr.pct) * 100
-        pp_vs_10 = (r20.pct - r10.pct) * 100
-        pp_nsr_cls = "mom-up" if pp_vs_nsr > 0 else ("mom-down" if pp_vs_nsr < 0 else "")
-        pp_10_cls = "mom-up" if pp_vs_10 > 0 else ("mom-down" if pp_vs_10 < 0 else "")
-        pp_nsr_html = f'<span class="{pp_nsr_cls}">{abs(pp_vs_nsr):.1f}pp</span>' if pp_nsr_cls else f'{pp_vs_nsr:.1f}pp'
-        pp_10_html = f'<span class="{pp_10_cls}">{abs(pp_vs_10):.1f}pp</span>' if pp_10_cls else f'{pp_vs_10:.1f}pp'
+        bps_vs_nsr = (r20.pct - rnsr.pct) * 10000
+        bps_vs_10 = (r20.pct - r10.pct) * 10000
+        bps_nsr_cls = "mom-up" if bps_vs_nsr > 0 else ("mom-down" if bps_vs_nsr < 0 else "")
+        bps_10_cls = "mom-up" if bps_vs_10 > 0 else ("mom-down" if bps_vs_10 < 0 else "")
+        bps_nsr_html = f'<span class="{bps_nsr_cls}">{abs(bps_vs_nsr):,.0f}bps</span>' if bps_nsr_cls else f'{bps_vs_nsr:,.0f}bps'
+        bps_10_html = f'<span class="{bps_10_cls}">{abs(bps_vs_10):,.0f}bps</span>' if bps_10_cls else f'{bps_vs_10:,.0f}bps'
         rows_html.append(
             '<tr>'
             f'<td class="label">{esc(r20.label)}</td>'
             f'<td class="num">{r20.count} <small style="color:var(--c-muted)">({r20.pct*100:.0f}%)</small></td>'
-            f'<td class="num">{pp_nsr_html}</td>'
+            f'<td class="num">{bps_nsr_html}</td>'
             f'<td class="num">{rnsr.count} <small style="color:var(--c-muted)">({rnsr.pct*100:.0f}%)</small></td>'
-            f'<td class="num">{pp_10_html}</td>'
+            f'<td class="num">{bps_10_html}</td>'
             f'<td class="num">{r10.count} <small style="color:var(--c-muted)">({r10.pct*100:.0f}%)</small></td>'
             '</tr>'
         )
@@ -1318,7 +1370,7 @@ def render_section5(adoption) -> str:
     )
 
     return (
-        '<h2 class="section-title" id="section5">區塊 5 · Seller Adoption 指標</h2>'
+        '<h2 class="section-title" id="section5">Seller Adoption 指標</h2>'
         '<section class="card" id="s5-adoption">'
         '<div class="card-header">'
         f'<span>Adoption 對比 (ACC 2.0 vs NSR All vs ACC 1.0)</span>'
@@ -1544,19 +1596,19 @@ def render_section6(raw_df: "pd.DataFrame") -> str:
 # 區塊 7 渲染 (Weekly GMS)
 # ============================================================
 
-def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0) -> str:
+def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0, n_launched: int = 112) -> str:
     """Weekly Performance: GMS + GMS/Seller 折線圖與表格。"""
     weeks = weekly.weeks
     gms_20 = weekly.gms_20
     gms_10 = weekly.gms_10
 
-    # 賣家數
-    n_20 = 113
+    # 賣家數 (GMS/Seller 用已開賣數)
+    n_20 = n_launched
     n_10 = 70
 
-    # GMS/Seller
-    gps_20 = [v / n_20 if v > 0 else 0 for v in gms_20]
-    gps_10 = [v / n_10 if v > 0 else 0 for v in gms_10]
+    # GMS/Seller (用每週 YTD GMS ÷ 賣家數)
+    gps_20 = [v / n_20 if v > 0 else 0 for v in weekly.ytd_20]
+    gps_10 = [v / n_10 if v > 0 else 0 for v in weekly.ytd_10]
 
     # SVG 折線圖
     all_vals = [v for v in gms_20 + gms_10 if v > 0]
@@ -1756,7 +1808,7 @@ def render_section7(weekly, ytd_20: float = 0, ytd_10: float = 0) -> str:
         '<div class="chart-source" style="margin:10px 22px 22px;">'
         '<strong>資料來源</strong>:TWGS - 2026 WBR 各週資料夾的 P0 開頭檔案,工作表 raw。 '
         '<strong>篩選條件</strong>:launch_channel=DSR,reporting_week_of_year=該週週數。 '
-        '<strong>ACC 2.0</strong>:reporting_year=2026 + MCID ∈ 最終賣家名單 (113),加總 wtd_ord_gms。 '
+        '<strong>ACC 2.0</strong>:reporting_year=2026 + MCID ∈ 最終賣家名單 (115),加總 wtd_ord_gms。 '
         '<strong>ACC 1.0</strong>:reporting_year=2025 + MCID ∈ ACC 1.0 GMS by seller,加總 wtd_ord_gms。'
         '</div>'
     )
@@ -1830,17 +1882,78 @@ TABS_JS = """
 """
 
 
-def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched: int = 0, ytd_gms: float = 0, ytd_yoy: float = 0) -> str:
+def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched: int = 0,
+               ytd_gms: float = 0, ytd_yoy: float = 0, gms_per_seller: float = 0,
+               snapshot: dict | None = None) -> str:
     us_pct = next((p for l, c, p in us_exp_rows if l == "US"), 0)
     exp_pct = next((p for l, c, p in us_exp_rows if l.startswith("Expansion")), 0)
     updated = dt.datetime.now().strftime("%Y-%m-%d")
     attain_pct = n20 / n_target * 100 if n_target else 0
     yoy_pct = (n20 / n10 - 1) * 100 if n10 else 0
     launched_pct = n_launched / n20 * 100 if n20 else 0
+
+    # Snapshot summary text
+    snapshot_html = ""
+    if snapshot:
+        week = snapshot["week"]
+        p0_name = snapshot["p0_name"]
+        s_ytd_gms = snapshot["ytd_gms"]
+        s_ytd_gms_10 = snapshot["ytd_gms_10"]
+        s_gms_goal = snapshot["gms_goal"]
+        s_ps_goal = snapshot["ps_goal"]
+        s_per_seller = snapshot["per_seller"]
+        s_per_seller_10 = snapshot["per_seller_10"]
+        s_launched = snapshot["launched"]
+        s_launched_10 = snapshot["launched_10"]
+        s_pl_count = snapshot["pl_count"]
+        s_pl_rate = snapshot["pl_rate"]
+        s_pl_bps_nsr = snapshot["pl_bps_nsr"]
+        s_pl_bps_10 = snapshot["pl_bps_10"]
+        # Goal curve = week / 52
+        goal_curve = week / 52
+        gms_curve_target = s_gms_goal * goal_curve
+        ps_curve_target = s_ps_goal * goal_curve
+        gms_vs_curve = (s_ytd_gms / gms_curve_target - 1) * 100 if gms_curve_target else 0
+        ps_vs_curve = (s_per_seller / ps_curve_target - 1) * 100 if ps_curve_target else 0
+        launched_diff = s_launched - n_target
+        # vs ACC 1.0
+        gms_vs_10 = (s_ytd_gms / s_ytd_gms_10 - 1) * 100 if s_ytd_gms_10 else 0
+        launched_vs_10 = s_launched - s_launched_10
+        ps_vs_10 = (s_per_seller / s_per_seller_10 - 1) * 100 if s_per_seller_10 else 0
+        snap_date = dt.datetime.now().strftime("%#m/%#d")
+
+        # 未開賣賣家列表
+        unlaunched = snapshot.get("unlaunched", [])
+        unlaunched_html = ""
+        if unlaunched:
+            unlaunched_html = (
+                '<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:10px;'
+                'border-top:1px solid rgba(255,255,255,0.2);padding-top:8px;">'
+                f'<strong>未開賣 ({len(unlaunched)} 位):</strong>'
+            )
+            for s in unlaunched:
+                unlaunched_html += f'<br>MCID: {s["mcid"]} · {s["name"]} · AE: {s["ae"]}'
+            unlaunched_html += '</div>'
+
+        snapshot_html = (
+            '<div class="snapshot-box">'
+            f'<div class="snapshot-title">ACC 2.0\'s performance (Snapshot on {snap_date}, with {p0_name} W{week} data)</div>'
+            '<ul class="snapshot-list">'
+            f'<li><strong>YTD GMS:</strong> ${s_ytd_gms:,.0f} ({gms_vs_curve:+.1f}% vs goal curve, {gms_vs_10:+.1f}% vs ACC 1.0)</li>'
+            f'<li><strong>Seller launched:</strong> {s_launched} ({launched_diff:+d} vs goal {n_target}, {launched_vs_10:+d} vs ACC 1.0)</li>'
+            f'<li><strong>Per Seller GMS:</strong> ${s_per_seller:,.0f} ({ps_vs_curve:+.1f}% vs goal curve, {ps_vs_10:+.1f}% vs ACC 1.0)</li>'
+            f'<li><strong>Perfect Launch:</strong> {s_pl_count} Sellers with {s_pl_rate:.0f}% rate '
+            f'({s_pl_bps_nsr:+,.0f}bps vs NSR, {s_pl_bps_10:+,.0f}bps vs ACC 1.0)</li>'
+            '</ul>'
+            + unlaunched_html
+            + '</div>'
+        )
+
     return (
         '<header class="hero">'
         '<h1>ACC 2.0 錄取賣家分析</h1>'
         f'<div class="meta">資料來源:ACC 2.0 最終錄取結果 (20260105).xlsx · 1.0 對照:ACC 1.0分析.xlsx · 產出日期:{updated}</div>'
+        '<div class="hero-content">'
         '<div class="kpi-row">'
         f'<div class="kpi"><div class="label">ACC 2.0 錄取賣家</div>'
         f'<div class="value">{n20} <span style="font-size:14px;color:rgba(255,255,255,0.7)">/ {n_target}</span></div>'
@@ -1850,12 +1963,14 @@ def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched
         f'<div class="sub">ACC 1.0: {n10} 位 → ACC 2.0: {n20} 位</div></div>'
         f'<div class="kpi"><div class="label">Launched Seller</div>'
         f'<div class="value">{n_launched} <span style="font-size:14px;color:rgba(255,255,255,0.7)">/ {n20}</span></div>'
-        f'<div class="sub">{launched_pct:.0f}% launched ({n_launched}/{n20})</div></div>'
-        f'<div class="kpi"><div class="label">US</div><div class="value">{pct(us_pct)}</div><div class="sub">ACC 2.0</div></div>'
-        f'<div class="kpi"><div class="label">Expansion</div><div class="value">{pct(exp_pct)}</div><div class="sub">non-US</div></div>'
+        f'<div class="sub">US {pct(us_pct)} · Expansion {pct(exp_pct)}</div></div>'
         f'<div class="kpi"><div class="label">YTD GMS</div><div class="value">${ytd_gms:,.0f}</div>'
         f'<div class="sub">ACC 2.0 · YoY {ytd_yoy:+.0f}% vs ACC 1.0 2025</div></div>'
+        f'<div class="kpi"><div class="label">YTD GMS / Seller</div><div class="value">${gms_per_seller:,.0f}</div>'
+        f'<div class="sub">${ytd_gms:,.0f} / {n_launched} launched</div></div>'
         '</div>'
+        + snapshot_html
+        + '</div>'
         '</header>'
     )
 
@@ -1889,10 +2004,62 @@ def build() -> None:
     print("[8/8] 產出 HTML...")
     compare_keys = [item for item, col, _ in COMPARISON_MAP if col in df_10.columns]
 
+    # Build snapshot data
+    week = ytd_result.ytd.week
+    pl_row = next((r for r in adoption_result.rows_20 if r.label == "PL (Perfect Launch)"), None)
+    pl_nsr_row = next((r for r in adoption_result.rows_nsr if r.label == "PL (Perfect Launch)"), None)
+    pl_10_row = next((r for r in adoption_result.rows_10 if r.label == "PL (Perfect Launch)"), None)
+
+    # 找未開賣賣家 (在名單但不在 Tracker)
+    from adoption_analysis import load_20_mcids as _load_20_mcids, find_latest_nsr_tracker, WBR_BASE
+    _all_mcids = _load_20_mcids()
+    _tracker_path = find_latest_nsr_tracker(WBR_BASE)
+    _tracker_df = pd.read_excel(_tracker_path, sheet_name="2026 Raw", engine="openpyxl",
+                                usecols=["merchant_customer_id"])
+    _tracker_df = _tracker_df.dropna(subset=["merchant_customer_id"])
+    _tracker_df["mcid"] = _tracker_df["merchant_customer_id"].apply(
+        lambda x: str(int(x)) if isinstance(x, (int, float)) else str(x).strip()
+    )
+    _tracker_mcids = set(_tracker_df["mcid"])
+    _not_launched_mcids = _all_mcids - _tracker_mcids
+    # 從 roster 取公司名稱和 AE
+    _roster = pd.read_excel(FILE_20, sheet_name="最終賣家名單 (115)", engine="openpyxl")
+    _roster["MCID_str"] = _roster["MCID"].dropna().astype(str).str.strip()
+    _name_col = next((c for c in _roster.columns if "公司名稱" in str(c)), None)
+    _unlaunched_list = []
+    for _mcid in sorted(_not_launched_mcids):
+        _row = _roster[_roster["MCID_str"] == _mcid]
+        if not _row.empty:
+            _unlaunched_list.append({
+                "mcid": _mcid,
+                "name": str(_row.iloc[0][_name_col]) if _name_col else "N/A",
+                "ae": str(_row.iloc[0]["AE"]) if "AE" in _roster.columns else "N/A",
+            })
+
+    snapshot_data = {
+        "week": week,
+        "p0_name": ytd_result.ytd.p0_source.stem,
+        "ytd_gms": ytd_result.ytd.gms_20_ytd,
+        "ytd_gms_10": ytd_result.ytd.gms_10_ytd,
+        "gms_goal": ytd_result.plan.gms_goal,
+        "ps_goal": ytd_result.plan.gms_per_seller_goal,
+        "per_seller": ytd_result.ytd.gms_20_ytd / adoption_result.n_20 if adoption_result.n_20 else 0,
+        "per_seller_10": ytd_result.ytd.gms_10_ytd / 70 if ytd_result.ytd.gms_10_ytd else 0,
+        "launched": adoption_result.n_20,
+        "launched_10": 70,
+        "unlaunched": _unlaunched_list,
+        "pl_count": pl_row.count if pl_row else 0,
+        "pl_rate": pl_row.pct * 100 if pl_row else 0,
+        "pl_bps_nsr": (pl_row.pct - pl_nsr_row.pct) * 10000 if pl_row and pl_nsr_row else 0,
+        "pl_bps_10": (pl_row.pct - pl_10_row.pct) * 10000 if pl_row and pl_10_row else 0,
+    }
+
     body = (
-        render_hero(113, n10, us_exp, n_target=115, n_launched=adoption_result.n_20,
+        render_hero(115, n10, us_exp, n_target=115, n_launched=adoption_result.n_20,
                     ytd_gms=ytd_result.ytd.gms_20_ytd,
-                    ytd_yoy=(ytd_result.ytd.gms_20_ytd / ytd_result.ytd.gms_10_ytd - 1) * 100 if ytd_result.ytd.gms_10_ytd > 0 else 0)
+                    ytd_yoy=(ytd_result.ytd.gms_20_ytd / ytd_result.ytd.gms_10_ytd - 1) * 100 if ytd_result.ytd.gms_10_ytd > 0 else 0,
+                    gms_per_seller=ytd_result.ytd.gms_20_ytd / adoption_result.n_20 if adoption_result.n_20 else 0,
+                    snapshot=snapshot_data)
         + render_tabs_nav()
         + '<main>'
         + '<div class="tab-panel active" id="panel1">'
@@ -1905,7 +2072,7 @@ def build() -> None:
         + render_section3(monthly_result)
         + '</div>'
         + '<div class="tab-panel" id="panel4">'
-        + render_section4(ytd_result)
+        + render_section4(ytd_result, n_launched=adoption_result.n_20)
         + '</div>'
         + '<div class="tab-panel" id="panel5">'
         + render_section5(adoption_result)
@@ -1914,7 +2081,7 @@ def build() -> None:
         + render_section6(raw_df)
         + '</div>'
         + '<div class="tab-panel" id="panel7">'
-        + render_section7(weekly_result, ytd_20=ytd_result.ytd.gms_20_ytd, ytd_10=ytd_result.ytd.gms_10_ytd)
+        + render_section7(weekly_result, ytd_20=ytd_result.ytd.gms_20_ytd, ytd_10=ytd_result.ytd.gms_10_ytd, n_launched=adoption_result.n_20)
         + '</div>'
         + '</main>'
         + '<footer>ACC 2.0 分析 · '
