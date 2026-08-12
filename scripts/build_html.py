@@ -1929,7 +1929,7 @@ def render_hero(n20: int, n10: int, us_exp_rows, n_target: int = 115, n_launched
             unlaunched_html = (
                 '<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:10px;'
                 'border-top:1px solid rgba(255,255,255,0.2);padding-top:8px;">'
-                f'<strong>未開賣 ({len(unlaunched)} 位):</strong>'
+                f'<strong>Fraud ({len(unlaunched)} 位):</strong>'
             )
             for s in unlaunched:
                 unlaunched_html += f'<br>MCID: {s["mcid"]} · {s["name"]} · AE: {s["ae"]}'
