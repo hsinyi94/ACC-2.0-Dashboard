@@ -44,9 +44,9 @@ def find_latest_month_folder(base: Path) -> Path:
             continue
         m = pattern.match(child.name)
         if m:
-            # 確認裡面有 P0 開頭的 xlsx 或 csv
+            # 確認裡面有 P0 開頭的 xlsx、csv、txt 或 tsv
             has_p0 = any(
-                f.is_file() and f.suffix.lower() in (".xlsx", ".csv")
+                f.is_file() and f.suffix.lower() in (".xlsx", ".csv", ".txt", ".tsv")
                 and f.name.lower().startswith("p0")
                 for f in child.iterdir()
             )
@@ -59,11 +59,12 @@ def find_latest_month_folder(base: Path) -> Path:
 
 
 def find_latest_p0_in_folder(folder: Path) -> Path:
-    """挑 P0 開頭 xlsx/csv,優先找 P0_YYYYMMDD 格式,排除 ab_data 等。"""
+    """挑 P0 開頭的支援檔案，優先排除 ab_data，再依修改時間取最新。"""
+    supported = {".xlsx", ".csv", ".txt", ".tsv"}
     files = [
         f for f in folder.iterdir()
         if f.is_file()
-        and f.suffix.lower() in (".xlsx", ".csv")
+        and f.suffix.lower() in supported
         and f.name.lower().startswith("p0")
         and "ab_data" not in f.name.lower()
     ]
@@ -72,7 +73,7 @@ def find_latest_p0_in_folder(folder: Path) -> Path:
         files = [
             f for f in folder.iterdir()
             if f.is_file()
-            and f.suffix.lower() in (".xlsx", ".csv")
+            and f.suffix.lower() in supported
             and f.name.lower().startswith("p0")
         ]
     if not files:
@@ -140,8 +141,9 @@ P0_NEEDED_COLS = [
 def load_p0_filtered(p0_path: Path) -> pd.DataFrame:
     """讀 P0 (xlsx 或 csv),只保留需要欄位,並過濾 calendar_year=2026 + launch_channel=DSR。"""
     print(f"  讀取 P0 (只取需要欄位): {p0_path.name}")
-    if p0_path.suffix.lower() == ".csv":
-        df = pd.read_csv(p0_path, usecols=P0_NEEDED_COLS)
+    if p0_path.suffix.lower() in (".csv", ".txt", ".tsv"):
+        separator = "\t" if p0_path.suffix.lower() in (".txt", ".tsv") else ","
+        df = pd.read_csv(p0_path, sep=separator, usecols=P0_NEEDED_COLS)
     else:
         df = pd.read_excel(
             p0_path,
