@@ -151,7 +151,10 @@ class YTDResult:
 
 def calc_ytd(p0_path: Path, mcids_20: set[str], mcids_10: set[str]) -> YTDResult:
     print(f"  讀取 WBR P0: {p0_path.name}")
-    df = pd.read_excel(p0_path, sheet_name="raw",
+    from excel_utils import find_sheet_with_columns
+    sheet = find_sheet_with_columns(p0_path, P0_NEEDED_COLS)
+    print(f"    使用工作表: {sheet}")
+    df = pd.read_excel(p0_path, sheet_name=sheet,
                        engine="openpyxl", usecols=P0_NEEDED_COLS)
     print(f"    原始筆數: {len(df):,}")
     df = df[df["launch_channel"] == LAUNCH_CHANNEL].copy()

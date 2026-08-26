@@ -132,7 +132,9 @@ def build_raw_data() -> pd.DataFrame:
     if wbr_p0:
         cols_needed = ["reporting_year", "reporting_week_of_year", "launch_channel",
                        "merchant_customer_id", "ytd_ord_gms"]
-        wp = pd.read_excel(wbr_p0, sheet_name="raw", engine="openpyxl", usecols=cols_needed)
+        from excel_utils import find_sheet_with_columns
+        sheet = find_sheet_with_columns(wbr_p0, cols_needed)
+        wp = pd.read_excel(wbr_p0, sheet_name=sheet, engine="openpyxl", usecols=cols_needed)
         wp = wp.dropna(subset=["merchant_customer_id"]).copy()
         wp["merchant_customer_id"] = wp["merchant_customer_id"].astype("int64").astype(str).str.strip()
         wp = wp[(wp["reporting_year"] == 2026) & (wp["launch_channel"] == "DSR")]

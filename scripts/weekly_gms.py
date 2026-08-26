@@ -66,24 +66,8 @@ def calc_week(p0_path: Path, week: int, mcids_20: set[str], mcids_10: set[str]) 
     cols = ["reporting_year", "reporting_week_of_year", "launch_channel",
             "merchant_customer_id", "wtd_ord_gms", "ytd_ord_gms"]
 
-    # 偵測工作表名 (有些是 "raw",有些可能是其他名稱)
-    xls = pd.ExcelFile(p0_path, engine="openpyxl")
-    sheet = None
-    for candidate in ["raw", "Raw", "Sheet1"]:
-        if candidate in xls.sheet_names:
-            sheet = candidate
-            break
-    if sheet is None:
-        # 找第一個有 reporting_year 欄位的工作表
-        for sh in xls.sheet_names:
-            test = pd.read_excel(p0_path, sheet_name=sh, engine="openpyxl", nrows=1)
-            if "reporting_year" in test.columns:
-                sheet = sh
-                break
-    if sheet is None:
-        print(f"      [跳過] {p0_path.name} 找不到含 reporting_year 的工作表")
-        return {"week": week, "gms_20": 0.0, "gms_10": 0.0, "ytd_20": 0.0, "ytd_10": 0.0}
-
+    from excel_utils import find_sheet_with_columns
+    sheet = find_sheet_with_columns(p0_path, cols)
     df = pd.read_excel(p0_path, sheet_name=sheet, engine="openpyxl", usecols=cols)
     df = df[df["launch_channel"] == LAUNCH_CHANNEL].copy()
     df = df.dropna(subset=["merchant_customer_id"]).copy()
