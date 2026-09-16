@@ -12,3 +12,4 @@ output/weekly_gms_cache.json
 # OS
 Thumbs.db
 .DS_Store
+update.log
