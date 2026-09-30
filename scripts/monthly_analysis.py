@@ -45,11 +45,8 @@ def find_latest_month_folder(base: Path) -> Path:
         m = pattern.match(child.name)
         if m:
             # 確認裡面有 P0 開頭的 xlsx、csv、txt 或 tsv
-            has_p0 = any(
-                f.is_file() and f.suffix.lower() in (".xlsx", ".csv", ".txt", ".tsv")
-                and f.name.lower().startswith("p0")
-                for f in child.iterdir()
-            )
+            from excel_utils import is_p0_file
+            has_p0 = any(is_p0_file(f, exclude_ab_data=False) for f in child.iterdir())
             if has_p0:
                 candidates.append((int(m.group(1)), child))
     if not candidates:
@@ -141,16 +138,8 @@ P0_NEEDED_COLS = [
 def load_p0_filtered(p0_path: Path) -> pd.DataFrame:
     """讀 P0 (xlsx 或 csv),只保留需要欄位,並過濾 calendar_year=2026 + launch_channel=DSR。"""
     print(f"  讀取 P0 (只取需要欄位): {p0_path.name}")
-    if p0_path.suffix.lower() in (".csv", ".txt", ".tsv"):
-        separator = "\t" if p0_path.suffix.lower() in (".txt", ".tsv") else ","
-        df = pd.read_csv(p0_path, sep=separator, usecols=P0_NEEDED_COLS)
-    else:
-        df = pd.read_excel(
-            p0_path,
-            sheet_name="Sheet1",
-            engine="openpyxl",
-            usecols=P0_NEEDED_COLS,
-        )
+    from excel_utils import read_p0
+    df = read_p0(p0_path, P0_NEEDED_COLS)
     print(f"    原始筆數: {len(df):,}")
     df = df[df["calendar_year"] == CALENDAR_YEAR].copy()
     df = df[df["launch_channel"] == LAUNCH_CHANNEL].copy()

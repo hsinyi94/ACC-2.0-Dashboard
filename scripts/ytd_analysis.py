@@ -44,12 +44,9 @@ def find_latest_week_folder(base: Path) -> Path:
         if child.is_dir():
             m = pattern.match(child.name)
             if m:
-                # 確認裡面有 P0 開頭的 xlsx
-                has_p0 = any(
-                    f.is_file() and f.suffix.lower() == ".xlsx"
-                    and f.name.lower().startswith("p0")
-                    for f in child.iterdir()
-                )
+                # 確認裡面有 P0 開頭的檔案 (xlsx 或 csv)
+                from excel_utils import is_p0_file
+                has_p0 = any(is_p0_file(f) for f in child.iterdir())
                 if has_p0:
                     candidates.append((int(m.group(1)), child))
     if not candidates:
@@ -59,11 +56,8 @@ def find_latest_week_folder(base: Path) -> Path:
 
 
 def find_latest_p0(folder: Path) -> Path:
-    files = [
-        f for f in folder.iterdir()
-        if f.is_file() and f.suffix.lower() == ".xlsx"
-        and f.name.lower().startswith("p0")
-    ]
+    from excel_utils import is_p0_file
+    files = [f for f in folder.iterdir() if is_p0_file(f)]
     if not files:
         raise FileNotFoundError(f"{folder} 無 P0 開頭檔案")
     files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
@@ -151,11 +145,8 @@ class YTDResult:
 
 def calc_ytd(p0_path: Path, mcids_20: set[str], mcids_10: set[str]) -> YTDResult:
     print(f"  讀取 WBR P0: {p0_path.name}")
-    from excel_utils import find_sheet_with_columns
-    sheet = find_sheet_with_columns(p0_path, P0_NEEDED_COLS)
-    print(f"    使用工作表: {sheet}")
-    df = pd.read_excel(p0_path, sheet_name=sheet,
-                       engine="openpyxl", usecols=P0_NEEDED_COLS)
+    from excel_utils import read_p0
+    df = read_p0(p0_path, P0_NEEDED_COLS)
     print(f"    原始筆數: {len(df):,}")
     df = df[df["launch_channel"] == LAUNCH_CHANNEL].copy()
     # P0 的 merchant_customer_id 是 float (帶 .0),要先轉 int 再字串化,才能對齊 ACC 的 int MCID

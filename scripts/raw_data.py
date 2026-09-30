@@ -44,11 +44,8 @@ def _find_latest_month_folder(base: Path) -> Path:
 
 
 def _find_p0(folder: Path) -> Path | None:
-    supported = {".xlsx", ".csv", ".txt", ".tsv"}
-    files = [f for f in folder.iterdir()
-             if f.is_file() and f.suffix.lower() in supported
-             and f.name.lower().startswith("p0")
-             and "ab_data" not in f.name.lower()]
+    from excel_utils import is_p0_file
+    files = [f for f in folder.iterdir() if is_p0_file(f)]
     if not files:
         return None
     files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
@@ -108,13 +105,8 @@ def build_raw_data() -> pd.DataFrame:
     if mbr_p0:
         cols_needed = ["calendar_year", "calendar_month", "launch_channel",
                        "merchant_customer_id", "mtd_ord_gms"]
-        if mbr_p0.suffix.lower() in (".csv", ".txt", ".tsv"):
-            separator = "\t" if mbr_p0.suffix.lower() in (".txt", ".tsv") else ","
-            p0 = pd.read_csv(mbr_p0, sep=separator, usecols=cols_needed)
-        else:
-            p0 = pd.read_excel(
-                mbr_p0, sheet_name="Sheet1", engine="openpyxl", usecols=cols_needed
-            )
+        from excel_utils import read_p0
+        p0 = read_p0(mbr_p0, cols_needed)
         p0 = p0.dropna(subset=["merchant_customer_id"]).copy()
         p0["merchant_customer_id"] = p0["merchant_customer_id"].astype("int64").astype(str).str.strip()
         p0 = p0[(p0["calendar_year"] == 2026) & (p0["launch_channel"] == "DSR")]
@@ -132,9 +124,8 @@ def build_raw_data() -> pd.DataFrame:
     if wbr_p0:
         cols_needed = ["reporting_year", "reporting_week_of_year", "launch_channel",
                        "merchant_customer_id", "ytd_ord_gms"]
-        from excel_utils import find_sheet_with_columns
-        sheet = find_sheet_with_columns(wbr_p0, cols_needed)
-        wp = pd.read_excel(wbr_p0, sheet_name=sheet, engine="openpyxl", usecols=cols_needed)
+        from excel_utils import read_p0
+        wp = read_p0(wbr_p0, cols_needed)
         wp = wp.dropna(subset=["merchant_customer_id"]).copy()
         wp["merchant_customer_id"] = wp["merchant_customer_id"].astype("int64").astype(str).str.strip()
         wp = wp[(wp["reporting_year"] == 2026) & (wp["launch_channel"] == "DSR")]

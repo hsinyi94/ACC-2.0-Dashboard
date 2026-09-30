@@ -49,11 +49,8 @@ def find_all_wk_p0s(base: Path) -> list[tuple[int, Path]]:
         if not m:
             continue
         wk = int(m.group(1))
-        p0_files = [
-            f for f in child.iterdir()
-            if f.is_file() and f.suffix.lower() == ".xlsx"
-            and f.name.lower().startswith("p0")
-        ]
+        from excel_utils import is_p0_file
+        p0_files = [f for f in child.iterdir() if is_p0_file(f)]
         if p0_files:
             p0_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
             results.append((wk, p0_files[0]))
@@ -66,9 +63,8 @@ def calc_week(p0_path: Path, week: int, mcids_20: set[str], mcids_10: set[str]) 
     cols = ["reporting_year", "reporting_week_of_year", "launch_channel",
             "merchant_customer_id", "wtd_ord_gms", "ytd_ord_gms"]
 
-    from excel_utils import find_sheet_with_columns
-    sheet = find_sheet_with_columns(p0_path, cols)
-    df = pd.read_excel(p0_path, sheet_name=sheet, engine="openpyxl", usecols=cols)
+    from excel_utils import read_p0
+    df = read_p0(p0_path, cols)
     df = df[df["launch_channel"] == LAUNCH_CHANNEL].copy()
     df = df.dropna(subset=["merchant_customer_id"]).copy()
     df["merchant_customer_id"] = df["merchant_customer_id"].astype("int64").astype(str).str.strip()
