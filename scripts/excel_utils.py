@@ -24,8 +24,15 @@ def read_p0(path: Path, columns: Iterable[str]) -> pd.DataFrame:
     suffix = path.suffix.lower()
     if suffix in _TEXT_SUFFIXES:
         separator = "\t" if suffix in (".txt", ".tsv") else ","
-        # utf-8-sig:部分匯出檔帶 BOM,會讓第一個欄位名對不上
-        return pd.read_csv(path, sep=separator, usecols=columns, encoding="utf-8-sig")
+        # utf-8-sig 先試 (部分匯出檔帶 BOM,否則第一個欄位名對不上),
+        # 再退到 cp950 / cp1252 (舊版匯出檔的賣家名稱會夾帶非 UTF-8 字元)
+        last_error = None
+        for encoding in ("utf-8-sig", "cp950", "cp1252"):
+            try:
+                return pd.read_csv(path, sep=separator, usecols=columns, encoding=encoding)
+            except UnicodeDecodeError as exc:
+                last_error = exc
+        raise last_error
     sheet = find_sheet_with_columns(path, columns)
     return pd.read_excel(path, sheet_name=sheet, engine="openpyxl", usecols=columns)
 
